@@ -22,9 +22,8 @@ Executing this script will create below resources for demo.
 - Execute - Using service principal or managed Identity. 
 - Add the service principal details (Client ID and Secret) in the provider file. (This can be ignored if we are using managed identity.)
 
-## <u>Commands:</u>
-- Trigger using tf commands.
-- az login - Use this to authenticate with the Azure portal.  
+## <u>Commands:Trigger using tf commands</u>
+- az login - ##Use this to authenticate with the Azure portal.  
 - terraform init
 - terraform plan -var-file="./demo/demo.tfvars" -input=false -out=tfplan
 - terraform apply -auto-approve -input=false tfplan
