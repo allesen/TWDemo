@@ -1,0 +1,48 @@
+#Infra pipeline to destroy resources.
+name: (Destroy) Terraform - Demo
+trigger: none
+
+parameters:
+  - name: RunDestroy
+    displayName: "Run Terraform Destroy"
+    type: boolean
+    default: false
+
+stages:
+  - stage: demo
+    displayName: demo
+    jobs:
+      - job: plan
+        pool: build-agent ## Change this with name of the build agent pool.
+
+        steps:
+          - task: replacetokens@3
+            inputs:
+              targetFiles: '**/*.tfvars'
+              encoding: 'auto'
+              writeBOM: true
+              actionOnMissing: 'fail'
+              keepToken: false
+              tokenPrefix: '__'
+              tokenSuffix: '__'
+              useLegacyPattern: false
+              enableTransforms: false
+              enableTelemetry: true
+
+          - script: 'terraform init -backend-config="./demo/demo-backend.tfvars"'
+            displayName: 'Terraform Init'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC'
+
+
+          - script: terraform validate
+            displayName: 'Terraform Validate'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'
+
+          - script: terraform plan -destroy -var-file="./demo/demo.tfvars" -input=false -out=destroytfplan
+            displayName: 'Terraform Plan (Destroy)'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'
+
+          - ${{ if eq(parameters.RunDestroy, true) }}:
+              - script: terraform apply -auto-approve -input=false destroytfplan
+                displayName: 'Terraform Destroy'
+                workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'

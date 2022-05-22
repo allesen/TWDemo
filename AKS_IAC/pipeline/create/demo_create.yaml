@@ -1,0 +1,48 @@
+#  Infra pipeline for resources creation
+name: Terraform - Demo
+trigger: none
+
+parameters:
+  - name: RunApply
+    displayName: "Run Terraform Apply"
+    type: boolean
+    default: false
+
+stages:
+  - stage: demo
+    displayName: demo
+    jobs:
+      - job: plan
+        pool: build-agent ## Change this with name of the build agent pool.
+
+        steps:
+          - task: replacetokens@3
+            inputs:
+              targetFiles: '**/*.tfvars'
+              encoding: 'auto'
+              writeBOM: true
+              actionOnMissing: 'fail'
+              keepToken: false
+              tokenPrefix: '__'
+              tokenSuffix: '__'
+              useLegacyPattern: false
+              enableTransforms: false
+              enableTelemetry: true
+
+          - script: 'terraform init -backend-config="./demo/demo-backend.tfvars"'
+            displayName: 'Terraform Init'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC'
+
+
+          - script: terraform validate
+            displayName: 'Terraform Validate'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'
+
+          - script: terraform plan -var-file="./demo/demo.tfvars" -input=false -out=tfplan
+            displayName: 'Terraform Plan'
+            workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'
+
+          - ${{ if eq(parameters.RunApply, true) }}:
+              - script: terraform apply -auto-approve -input=false tfplan
+                displayName: 'Terraform apply'
+                workingDirectory: '$(System.DefaultWorkingDirectory)/AKS_IAC/'
